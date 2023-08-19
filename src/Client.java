@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
 import java.util.Properties;
@@ -6,15 +7,19 @@ public class Client {
     private Socket socket;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
+    private JTextArea logTextArea; // Reference to the GUI log area
     private static final String SERVER_IP = "serverIP";
     private static final String SERVER_PORT = "serverPort";
     private static final String FILE_NAME = "config/client_config.properties";
     private static final String COMMAND_STARTS_WITH = "COMMAND:";
     private static final String START_GAME_COMMAND = "START_GAME";
     private static final String GAME_STARTED_RESPONSE = "INITIATED";
-    public Client(Socket socket){
+
+    public Client(Socket socket, JTextArea logTextArea){
+        this.socket = socket;
+        this.logTextArea = logTextArea;
+
         try{
-            this.socket = socket;
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         } catch (IOException e) {
@@ -52,8 +57,16 @@ public class Client {
             // Start the game or perform relevant action
             System.out.println("Received command to start the game.");
             sendMessage(GAME_STARTED_RESPONSE);
+            appendToLog("Game initiation request received from the server.");
         }
         // Add more cases for different commands as needed
+    }
+
+    private void appendToLog(String message) {
+        SwingUtilities.invokeLater(() -> {
+            logTextArea.append(message + "\n");
+            logTextArea.setCaretPosition(logTextArea.getDocument().getLength());
+        });
     }
 
     public void sendMessage(String message) {
@@ -81,6 +94,7 @@ public class Client {
             e.printStackTrace();
         }
     }
+
     public static void main(String[] args) throws IOException {
         // Load configuration
         Properties config = new Properties();
@@ -96,8 +110,15 @@ public class Client {
         int serverPort = Integer.parseInt(config.getProperty(SERVER_PORT));
 
         Socket socket = new Socket(serverIP, serverPort);
-        Client client = new Client(socket);
+        JTextArea logTextArea = new JTextArea(); // Create the log text area here
+        Client client = new Client(socket, logTextArea);
         client.listenForMessage();
 
+        // Create a JFrame to display the logTextArea
+        JFrame frame = new JFrame("Client Log");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.getContentPane().add(new JScrollPane(logTextArea));
+        frame.pack();
+        frame.setVisible(true);
     }
 }
