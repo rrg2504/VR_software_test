@@ -19,6 +19,10 @@ public class Client {
                 String serverMessage;
                 try {
                     while ((serverMessage = reader.readLine()) != null) {
+                        if (serverMessage.equals("END")) {
+                            System.out.println("Server has closed the connection.");
+                            break;
+                        }
                         System.out.println("Received message from server: " + serverMessage);
                     }
                 } catch (IOException e) {
