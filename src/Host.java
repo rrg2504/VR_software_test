@@ -1,6 +1,4 @@
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -17,6 +15,9 @@ public class Host {
     private static final Object clientsLock = new Object();
     private static ServerGUI serverGUI;
 
+    private static final String GAME_STARTED_RESPONSE = "INITIATED";
+    private static final String FILE_NAME = "config/host_config.properties";
+
     public static void updateClients(String message) {
         for (ClientHandler client : clients) {
             client.sendMessage(message);
@@ -27,7 +28,7 @@ public class Host {
     public static void main(String[] args){
 
         Properties config = new Properties();
-        try (FileInputStream inputStream = new FileInputStream("host_config.properties")){
+        try (FileInputStream inputStream = new FileInputStream(FILE_NAME)){
             config.load(inputStream);
         } catch (IOException e) {
             e.printStackTrace();
@@ -130,7 +131,7 @@ public class Host {
                     // Process client messages
 
                     // Check if the message is a command/event
-                    if (clientMessage.equals("Initiated")) {
+                    if (clientMessage.equals(GAME_STARTED_RESPONSE)) {
                         if (!clients.isEmpty()) {
                             serverGUI.updateLog("Received initiation from the clients.");
                         }
