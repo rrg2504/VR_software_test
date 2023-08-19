@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Host {
     private static ServerSocket serverSocket;
+    private static int counter = 0;
     private static List<ClientHandler> clients = new CopyOnWriteArrayList<>();
     private static AtomicInteger connectedClients = new AtomicInteger(0);
 
@@ -20,14 +21,14 @@ public class Host {
         int port = 6868;
 
         startServer();
-        System.out.println("Server is listening on port " + port);
-        // TODO I can do the configuration file here
 
+        // TODO I can do the configuration file here
 
         // TODO the allowed ip's from config file
         String allowedClient1IP = "192.168.1.218";
         String allowedClient2IP = "192.168.1.219";
         while (connectedClients.get() < 2) {
+            System.out.println(connectedClients.get());
             try{
                 Socket clientSocket = serverSocket.accept();
                 String clientIP = clientSocket.getInetAddress().getHostAddress();
@@ -43,6 +44,9 @@ public class Host {
 
                     // Increment the connected clients counter
                     connectedClients.incrementAndGet();
+                    counter++;
+                    System.out.println(counter);
+                    System.out.println("Connected clients: " + connectedClients.get());
                 } else {
                     System.out.println("Rejected connection from client IP: " + clientIP);
                     // Optionally, you can close the socket for rejected connections
@@ -53,7 +57,7 @@ public class Host {
             }
 
         }
-
+        System.out.println("end of loop");
         updateClients("Welcome, gamers! The game is starting!");
 
     }

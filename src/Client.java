@@ -17,7 +17,7 @@ public class Client {
 
             while (true) {
                 String serverMessage = reader.readLine();
-                if (serverMessage == null) {
+                if (serverMessage != null && serverMessage.equals("END")) {
                     break; // Exit the loop if server disconnects
                 }
                 System.out.println("Received message from server: " + serverMessage);
