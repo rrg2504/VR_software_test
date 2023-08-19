@@ -18,7 +18,7 @@ public class Host {
         }
     }
     public static void main(String[] args){
-        int port = 6868;
+        int port = 6869;
 
         startServer();
 
@@ -57,8 +57,21 @@ public class Host {
             }
 
         }
-        System.out.println("end of loop");
-        updateClients("Welcome, gamers! The game is starting!");
+        boolean statementPrinted = false;
+        while(true){
+            if(!statementPrinted) {
+                System.out.println("end of loop");
+                updateClients("Welcome, gamers! The game is starting!");
+                statementPrinted = true;
+            }
+
+            try {
+                Thread.sleep(1000); // Add a delay to avoid busy waiting
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
 
     }
 
@@ -92,15 +105,11 @@ public class Host {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))
             ) {
                 writer = new PrintWriter(new OutputStreamWriter(outputStream), true);
-
                 // Perform communication with the client here
                 // For example, read/write data using reader and writer
 
             } catch (IOException e) {
                 e.printStackTrace();
-            } finally {
-                connectedClients.decrementAndGet();
-                clients.remove(this); // Remove from the list of active clients
             }
         }
 

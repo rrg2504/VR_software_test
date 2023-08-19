@@ -8,7 +8,7 @@ import java.net.UnknownHostException;
 public class Client {
     public static void main(String[] args) {
         String hostname = "192.168.1.127";
-        int port = 6868;
+        int port = 6869;
 
         try (Socket socket = new Socket(hostname, port)) {
 
