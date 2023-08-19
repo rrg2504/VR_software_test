@@ -20,7 +20,9 @@ public class Client {
                 if (serverMessage != null && serverMessage.equals("END")) {
                     break; // Exit the loop if server disconnects
                 }
-                System.out.println("Received message from server: " + serverMessage);
+                if(serverMessage != null){
+                    System.out.println("Received message from server: " + serverMessage);
+                }
             }
 
         } catch (UnknownHostException ex) {
