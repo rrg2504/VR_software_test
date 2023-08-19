@@ -16,10 +16,11 @@ public class Client {
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             // Start a thread to read messages from the server
             Thread readThread = new Thread(() -> {
-                String serverMessage;
                 try {
-                    while ((serverMessage = reader.readLine()) != null) {
-                        if (serverMessage.equals("END")) {
+                    String serverMessage;
+                    while (true) {
+                        serverMessage = reader.readLine();
+                        if (serverMessage == null) {
                             System.out.println("Server has closed the connection.");
                             break;
                         }
