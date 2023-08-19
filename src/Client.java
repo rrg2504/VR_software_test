@@ -27,12 +27,38 @@ public class Client {
                     try{
                         serverMessage = bufferedReader.readLine();
                         System.out.println(serverMessage);
+
+                        // Check if the message is a command/event
+                        if (serverMessage.startsWith("COMMAND:")) {
+                            String command = serverMessage.substring("COMMAND:".length());
+                            handleCommand(command); // Implement this method to handle the command
+                        }
                     } catch (IOException e) {
                         //close everything
                     }
                 }
             }
         }).start();
+    }
+
+    private void handleCommand(String command) {
+        // Implement this method to perform actions based on the received command
+        if (command.equals("START_GAME")) {
+            // Start the game or perform relevant action
+            System.out.println("Received command to start the game.");
+            sendMessage("Initiated");
+        }
+        // Add more cases for different commands as needed
+    }
+
+    public void sendMessage(String message) {
+        try {
+            bufferedWriter.write(message);
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter){
@@ -58,47 +84,5 @@ public class Client {
         Client client = new Client(socket);
         client.listenForMessage();
 
-//        String hostname = "192.168.1.127";
-//        int port = 6869;
-//
-//        try (Socket socket = new Socket(hostname, port)) {
-//
-//            InputStream input = socket.getInputStream();
-//            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-//            // Start a thread to read messages from the server
-//            Thread readThread = new Thread(() -> {
-//                try {
-//                    String serverMessage;
-//                    while (true) {
-//                        serverMessage = reader.readLine();
-//                        if (serverMessage == null) {
-//                            System.out.println("Server has closed the connection.");
-//                            break;
-//                        }
-//                        System.out.println("Received message from server: " + serverMessage);
-//                    }
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            });
-//            readThread.start();
-////            while (true) {
-////                String serverMessage = reader.readLine();
-////                if (serverMessage != null && serverMessage.equals("END")) {
-////                    break; // Exit the loop if server disconnects
-////                }
-////                if(serverMessage != null){
-////                    System.out.println("Received message from server: " + serverMessage);
-////                }
-////            }
-//
-//        } catch (UnknownHostException ex) {
-//
-//            System.out.println("Server not found: " + ex.getMessage());
-//
-//        } catch (IOException ex) {
-//
-//            System.out.println("I/O error: " + ex.getMessage());
-//        }
     }
 }

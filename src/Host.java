@@ -1,7 +1,9 @@
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,55 +14,56 @@ public class Host {
     private static List<ClientHandler> clients = new CopyOnWriteArrayList<>();
     private static AtomicInteger connectedClients = new AtomicInteger(0);
     private static final Object clientsLock = new Object();
+    private static ServerGUI serverGUI;
 
     public static void updateClients(String message) {
-        synchronized (clientsLock) {
-            for (ClientHandler client : clients) {
-                client.sendMessage(message);
-            }
+        for (ClientHandler client : clients) {
+            client.sendMessage(message);
+
         }
+
     }
     public static void main(String[] args){
 
         startServer();
 
         // TODO I can do the configuration file here
+        // Create an instance of ServerGUI
+        serverGUI = new ServerGUI(clients);
 
         // TODO the allowed ip's from config file
-        String allowedClient1IP = "192.168.1.218";
-        String allowedClient2IP = "192.168.1.219";
-        while (connectedClients.get() < 2) {
-            System.out.println(connectedClients.get());
-            try{
-                Socket clientSocket = serverSocket.accept();
-                String clientIP = clientSocket.getInetAddress().getHostAddress();
-                System.out.println("New client connected");
+        Thread acceptThread = new Thread(() -> {
+            String allowedClient1IP = "192.168.1.218";
+            String allowedClient2IP = "192.168.1.219";
+            while (connectedClients.get() < 2) {
+                try {
+                    Socket clientSocket = serverSocket.accept();
+                    String clientIP = clientSocket.getInetAddress().getHostAddress();
+                    System.out.println("New client connected");
 
-                // Validate client IP
-                if (validateClientIP(clientIP, allowedClient1IP, allowedClient2IP)) {
-                    System.out.println("Accepted connection from client IP: " + clientIP);
-                    // Handle the client connection here (send/receive data, etc.)
-                    ClientHandler clientHandler = new ClientHandler(clientSocket);
-                    clients.add(clientHandler);
-                    clientHandler.start();
-
-                    // Increment the connected clients counter
-                    connectedClients.incrementAndGet();
-                    updateClients("un video ma mi gente");
-                    System.out.println("Connected clients: " + connectedClients.get());
-                } else {
-                    System.out.println("Rejected connection from client IP: " + clientIP);
-                    // Optionally, you can close the socket for rejected connections
-                    clientSocket.close();
+                    // Validate client IP and handle the connection
+                    if (validateClientIP(clientIP, allowedClient1IP, allowedClient2IP)) {
+                        System.out.println("Accepted connection from client IP: " + clientIP);
+                        ClientHandler clientHandler = new ClientHandler(clientSocket);
+                        synchronized (clientsLock) {
+                            clients.add(clientHandler);
+                        }
+                        clientHandler.start();
+                        connectedClients.incrementAndGet();
+                    } else {
+                        System.out.println("Rejected connection from client IP: " + clientIP);
+                        // Optionally, you can close the socket for rejected connections
+                        clientSocket.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-
-        }
+        });
+        acceptThread.start();
         boolean statementPrinted = false;
         while(true){
-            if(!statementPrinted) {
+            if(!statementPrinted && connectedClients.get() > 1) {
                 System.out.println("end of loop");
                 System.out.println(clients);
                 updateClients("Welcome, gamers! The game is starting!");
@@ -91,7 +94,7 @@ public class Host {
         return clientIP.equals(allowedClient1IP) || clientIP.equals(allowedClient2IP);
     }
 
-    private static class ClientHandler extends Thread {
+    public static class ClientHandler extends Thread {
         private Socket clientSocket;
         private BufferedReader reader;
         private PrintWriter writer;
@@ -114,6 +117,13 @@ public class Host {
                 String clientMessage;
                 while ((clientMessage = reader.readLine()) != null) {
                     // Process client messages
+
+                    // Check if the message is a command/event
+                    if (clientMessage.equals("Initiated")) {
+                        if (!clients.isEmpty()) {
+                            serverGUI.updateLog("Received initiation from the clients.");
+                        }
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -127,5 +137,50 @@ public class Host {
                 writer.println(message);
             }
         }
+    }
+
+
+}
+
+class ServerGUI extends JFrame {
+    private final JButton sendMessageButton;
+    private final JTextArea textArea;
+    private List<Host.ClientHandler> clients;
+
+    public ServerGUI(List<Host.ClientHandler> clients) {
+        // Initialize frame properties
+        setTitle("Server GUI");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(400, 300);
+
+        // Create components
+        JPanel panel = new JPanel();
+        sendMessageButton = new JButton("Send Message to Clients");
+        textArea = new JTextArea(10, 30);
+        textArea.setEditable(false);
+
+        // Add components to panel
+        panel.add(sendMessageButton);
+        panel.add(new JScrollPane(textArea));
+
+        getContentPane().add(panel);
+
+        // Make the GUI visible
+        setVisible(true);
+
+        // Add ActionListener to the button
+        sendMessageButton.addActionListener(e -> {
+            String command = "COMMAND:START_GAME";
+            Host.updateClients(command);
+            if(!clients.isEmpty()){
+                updateLog("Sent command to start the game to all clients.");
+            }else{
+                updateLog("There are no clients currently connected");
+            }
+        });
+    }
+
+    public void updateLog(String message) {
+        textArea.append(message + "\n");
     }
 }
