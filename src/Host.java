@@ -11,10 +11,13 @@ public class Host {
     private static int counter = 0;
     private static List<ClientHandler> clients = new CopyOnWriteArrayList<>();
     private static AtomicInteger connectedClients = new AtomicInteger(0);
+    private static final Object clientsLock = new Object();
 
     public static void updateClients(String message) {
-        for (ClientHandler client : clients) {
-            client.sendMessage(message);
+        synchronized (clientsLock) {
+            for (ClientHandler client : clients) {
+                client.sendMessage(message);
+            }
         }
     }
     public static void main(String[] args){
@@ -90,26 +93,32 @@ public class Host {
 
     private static class ClientHandler extends Thread {
         private Socket clientSocket;
+        private BufferedReader reader;
         private PrintWriter writer;
 
         public ClientHandler(Socket socket) {
             this.clientSocket = socket;
+            try {
+                InputStream inputStream = clientSocket.getInputStream();
+                OutputStream outputStream = clientSocket.getOutputStream();
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+                writer = new PrintWriter(new OutputStreamWriter(outputStream), true);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
         public void run() {
-            try (
-                    InputStream inputStream = clientSocket.getInputStream();
-                    OutputStream outputStream = clientSocket.getOutputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))
-            ) {
-                writer = new PrintWriter(new OutputStreamWriter(outputStream), true);
-
-                // Perform communication with the client here
-                // For example, read/write data using reader and writer
-
+            try {
+                String clientMessage;
+                while ((clientMessage = reader.readLine()) != null) {
+                    // Process client messages
+                }
             } catch (IOException e) {
                 e.printStackTrace();
+            } finally {
+                // Close resources if needed
             }
         }
 
