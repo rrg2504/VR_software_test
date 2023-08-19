@@ -1,3 +1,4 @@
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -12,17 +13,15 @@ public class Client {
         try (Socket socket = new Socket(hostname, port)) {
 
             InputStream input = socket.getInputStream();
-            InputStreamReader reader = new InputStreamReader(input);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-            int character;
-            StringBuilder data = new StringBuilder();
-
-            while ((character = reader.read()) != -1) {
-                data.append((char) character);
+            while (true) {
+                String serverMessage = reader.readLine();
+                if (serverMessage == null) {
+                    break; // Exit the loop if server disconnects
+                }
+                System.out.println("Received message from server: " + serverMessage);
             }
-
-            System.out.println(data);
-
 
         } catch (UnknownHostException ex) {
 
