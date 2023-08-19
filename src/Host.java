@@ -5,6 +5,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,7 +26,19 @@ public class Host {
     }
     public static void main(String[] args){
 
-        startServer();
+        Properties config = new Properties();
+        try (FileInputStream inputStream = new FileInputStream("host_config.properties")){
+            config.load(inputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        String allowedClient1IP = config.getProperty("allowedClient1IP");
+        String allowedClient2IP = config.getProperty("allowedClient2IP");
+        int serverPort = Integer.parseInt(config.getProperty("serverPort")); //TODO Global var
+
+        startServer(serverPort);
 
         // TODO I can do the configuration file here
         // Create an instance of ServerGUI
@@ -33,8 +46,6 @@ public class Host {
 
         // TODO the allowed ip's from config file
         Thread acceptThread = new Thread(() -> {
-            String allowedClient1IP = "192.168.1.218";
-            String allowedClient2IP = "192.168.1.219";
             while (connectedClients.get() < 2) {
                 try {
                     Socket clientSocket = serverSocket.accept();
@@ -80,10 +91,10 @@ public class Host {
 
     }
 
-    public static void startServer() {
+    public static void startServer(int port) {
         try{
             //TODO: custom port. For now its plugged in
-            serverSocket = new ServerSocket(6869);
+            serverSocket = new ServerSocket(port);
             System.out.println("Server started listening on port 6869");
         } catch (IOException e) {
             e.printStackTrace();

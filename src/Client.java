@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Properties;
 
 public class Client {
     private Socket socket;
@@ -77,10 +78,20 @@ public class Client {
         }
     }
     public static void main(String[] args) throws IOException {
-        //Dont have to take user input here. GUI instead before we start anything TODO
-        String hostname = "192.168.1.127";
-        int port = 6869;
-        Socket socket = new Socket(hostname, port);
+        // Load configuration
+        Properties config = new Properties();
+        try (FileInputStream inputStream = new FileInputStream("config.properties")) {
+            config.load(inputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        // Read configuration values
+        String serverIP = config.getProperty("serverIP");
+        int serverPort = Integer.parseInt(config.getProperty("serverPort"));
+
+        Socket socket = new Socket(serverIP, serverPort);
         Client client = new Client(socket);
         client.listenForMessage();
 
