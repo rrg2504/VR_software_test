@@ -14,16 +14,27 @@ public class Client {
 
             InputStream input = socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-
-            while (true) {
-                String serverMessage = reader.readLine();
-                if (serverMessage != null && serverMessage.equals("END")) {
-                    break; // Exit the loop if server disconnects
+            // Start a thread to read messages from the server
+            Thread readThread = new Thread(() -> {
+                String serverMessage;
+                try {
+                    while ((serverMessage = reader.readLine()) != null) {
+                        System.out.println("Received message from server: " + serverMessage);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                if(serverMessage != null){
-                    System.out.println("Received message from server: " + serverMessage);
-                }
-            }
+            });
+            readThread.start();
+//            while (true) {
+//                String serverMessage = reader.readLine();
+//                if (serverMessage != null && serverMessage.equals("END")) {
+//                    break; // Exit the loop if server disconnects
+//                }
+//                if(serverMessage != null){
+//                    System.out.println("Received message from server: " + serverMessage);
+//                }
+//            }
 
         } catch (UnknownHostException ex) {
 

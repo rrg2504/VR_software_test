@@ -18,7 +18,6 @@ public class Host {
         }
     }
     public static void main(String[] args){
-        int port = 6869;
 
         startServer();
 
@@ -44,8 +43,7 @@ public class Host {
 
                     // Increment the connected clients counter
                     connectedClients.incrementAndGet();
-                    counter++;
-                    System.out.println(counter);
+                    updateClients("un video ma mi gente");
                     System.out.println("Connected clients: " + connectedClients.get());
                 } else {
                     System.out.println("Rejected connection from client IP: " + clientIP);
@@ -61,6 +59,7 @@ public class Host {
         while(true){
             if(!statementPrinted) {
                 System.out.println("end of loop");
+                System.out.println(clients);
                 updateClients("Welcome, gamers! The game is starting!");
                 statementPrinted = true;
             }
@@ -78,8 +77,8 @@ public class Host {
     public static void startServer() {
         try{
             //TODO: custom port. For now its plugged in
-            serverSocket = new ServerSocket(6868);
-            System.out.println("Server started listening on port 6868");
+            serverSocket = new ServerSocket(6869);
+            System.out.println("Server started listening on port 6869");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -105,6 +104,7 @@ public class Host {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))
             ) {
                 writer = new PrintWriter(new OutputStreamWriter(outputStream), true);
+
                 // Perform communication with the client here
                 // For example, read/write data using reader and writer
 
