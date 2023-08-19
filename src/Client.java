@@ -80,7 +80,7 @@ public class Client {
     public static void main(String[] args) throws IOException {
         // Load configuration
         Properties config = new Properties();
-        try (FileInputStream inputStream = new FileInputStream("config.properties")) {
+        try (FileInputStream inputStream = new FileInputStream("client_config.properties")) {
             config.load(inputStream);
         } catch (IOException e) {
             e.printStackTrace();
