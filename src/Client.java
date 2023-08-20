@@ -23,29 +23,29 @@ public class Client {
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         } catch (IOException e) {
-            closeEverything(socket,bufferedReader,bufferedWriter);
+            closeResources(socket, bufferedReader, bufferedWriter);
+            appendToLog("Failed to connect to the server.");
         }
     }
 
     public void listenForMessage(){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String serverMessage;
+        new Thread(() -> {
+            String serverMessage;
 
-                while(socket.isConnected()){
-                    try{
-                        serverMessage = bufferedReader.readLine();
-                        System.out.println(serverMessage);
+            while(socket.isConnected()){
+                try{
+                    serverMessage = bufferedReader.readLine();
+                    System.out.println(serverMessage);
 
-                        // Check if the message is a command/event
-                        if (serverMessage.startsWith(COMMAND_STARTS_WITH)) {
-                            String command = serverMessage.substring(COMMAND_STARTS_WITH.length());
-                            handleCommand(command); // Implement this method to handle the command
-                        }
-                    } catch (IOException e) {
-                        //close everything
+                    // Check if the message is a command/event
+                    if (serverMessage.startsWith(COMMAND_STARTS_WITH)) {
+                        String command = serverMessage.substring(COMMAND_STARTS_WITH.length());
+                        handleCommand(command); // Implement this method to handle the command
                     }
+                } catch (IOException e) {
+                    // Close connection and update log on failure
+                    closeResources(socket, bufferedReader, bufferedWriter);
+                    appendToLog("Connection to the server was lost.");
                 }
             }
         }).start();
@@ -55,7 +55,7 @@ public class Client {
         // Implement this method to perform actions based on the received command
         if (command.equals(START_GAME_COMMAND)) {
             // Start the game or perform relevant action
-            System.out.println("Received command to start the game.");
+            appendToLog("Received command to start the game.");
             sendMessage(GAME_STARTED_RESPONSE);
             appendToLog("Game initiation request received from the server.");
         }
@@ -79,7 +79,7 @@ public class Client {
         }
     }
 
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter){
+    public void closeResources(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter){
         try{
             if (bufferedReader != null){
                 bufferedReader.close();
@@ -113,6 +113,7 @@ public class Client {
         JTextArea logTextArea = new JTextArea(20, 50); // Create a larger log text area
         logTextArea.setEditable(false); // Make the text area read-only
         Client client = new Client(socket, logTextArea);
+        client.appendToLog("Connecting to the server...");
         client.listenForMessage();
 
         // Create a JFrame to display the logTextArea

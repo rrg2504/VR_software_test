@@ -23,7 +23,6 @@ public class Host {
             client.sendMessage(message);
 
         }
-
     }
     public static void main(String[] args){
 
@@ -44,26 +43,27 @@ public class Host {
         // TODO I can do the configuration file here
         // Create an instance of ServerGUI
         serverGUI = new ServerGUI(clients);
-
+        serverGUI.updateLog("Server started listening on port: " + serverPort);
         // TODO the allowed ip's from config file
         Thread acceptThread = new Thread(() -> {
             while (!serverSocket.isClosed()) {
                 try {
                     Socket clientSocket = serverSocket.accept();
                     String clientIP = clientSocket.getInetAddress().getHostAddress();
-                    System.out.println("New client connected");
+
+                    serverGUI.updateLog("New client connected");
 
                     // Validate client IP and handle the connection
                     if (validateClientIP(clientIP, allowedClient1IP, allowedClient2IP)) {
-                        System.out.println("Accepted connection from client IP: " + clientIP);
-                        ClientHandler clientHandler = new ClientHandler(clientSocket);
+                        serverGUI.updateLog("Accepted connection from client IP: " + clientIP);
+                        ClientHandler clientHandler = new ClientHandler(clientSocket,clientIP);
                         synchronized (clientsLock) {
                             clients.add(clientHandler);
                         }
                         clientHandler.start();
                         connectedClients.incrementAndGet(); //TODO
                     } else {
-                        System.out.println("Rejected connection from client IP: " + clientIP);
+                        serverGUI.updateLog("Rejected connection from client IP: " + clientIP);
                         // Optionally, you can close the socket for rejected connections
                         clientSocket.close();
                     }
@@ -94,9 +94,7 @@ public class Host {
 
     public static void startServer(int port) {
         try{
-            //TODO: custom port. For now its plugged in
             serverSocket = new ServerSocket(port);
-            System.out.println("Server started listening on port 6869");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -111,8 +109,11 @@ public class Host {
         private BufferedReader reader;
         private PrintWriter writer;
 
-        public ClientHandler(Socket socket) {
+        private String clientIP;
+
+        public ClientHandler(Socket socket, String clientIP) {
             this.clientSocket = socket;
+            this.clientIP = clientIP;
             try {
                 InputStream inputStream = clientSocket.getInputStream();
                 OutputStream outputStream = clientSocket.getOutputStream();
@@ -133,7 +134,7 @@ public class Host {
                     // Check if the message is a command/event
                     if (clientMessage.equals(GAME_STARTED_RESPONSE)) {
                         if (!clients.isEmpty()) {
-                            serverGUI.updateLog("Received initiation from the clients.");
+                            serverGUI.updateLog("Received Game Confirmation from client with ip=" + this.clientIP);
                         }
                     }
                 }
@@ -141,12 +142,29 @@ public class Host {
                 e.printStackTrace();
             } finally {
                 // Close resources if needed
+                closeResources();
             }
         }
 
         public void sendMessage(String message) {
             if (writer != null) {
                 writer.println(message);
+            }
+        }
+
+        private void closeResources() {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+                if (writer != null) {
+                    writer.close();
+                }
+                if (clientSocket != null) {
+                    clientSocket.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
