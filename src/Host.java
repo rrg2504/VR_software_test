@@ -21,8 +21,11 @@ public class Host {
 
     private static final String GAME_HALTED_RESPONSE = "HALTED";
 
+    private static final String SERVER_SHUTDOWN = "COMMAND:SERVER_SHUTDOWN";
+
     private static final String NO_GAME_IS_PLAYING ="NO_GAME_PLAYING";
     private static final String FILE_NAME = "config/host_config.properties";
+
 
     public static void updateClients(String message) {
         for (ClientHandler client : clients) {
@@ -45,6 +48,19 @@ public class Host {
 
         startServer(serverPort);
 
+        // Thread that checks if the server/program has been closed
+        // which then sends a command to clients
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            for (ClientHandler client : clients) {
+                client.sendMessage(SERVER_SHUTDOWN);
+                client.closeResources();
+            }
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
         // TODO I can do the configuration file here
         // Create an instance of ServerGUI
         serverGUI = new ServerGUI(clients);
@@ -78,23 +94,6 @@ public class Host {
             }
         });
         acceptThread.start();
-//        boolean statementPrinted = false;
-//        while(true){
-//            if(!statementPrinted && connectedClients.get() > 1) {
-//                System.out.println("end of loop");
-//                System.out.println(clients);
-//                updateClients("Welcome, gamers! The game is starting!");
-//                statementPrinted = true;
-//            }
-//
-//            try {
-//                Thread.sleep(1000); // Add a delay to avoid busy waiting
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
-
-
     }
 
     public static void startServer(int port) {
@@ -134,7 +133,15 @@ public class Host {
             try {
                 String clientMessage;
                 while ((clientMessage = reader.readLine()) != null) {
-
+                    if (clientMessage.equals("SERVER_SHUTDOWN")) {
+                        // Handle server shutdown
+                        closeResources();
+                        synchronized (clientsLock) {
+                            clients.remove(this);
+                        }
+                        serverGUI.updateLog("Client ip=" + this.clientIP + " received shutdown signal from server.");
+                        break; // Exit the loop
+                    }
                     // Check if the message is a command/event
                     if (clientMessage.equals(GAME_STARTED_RESPONSE)) {
                         if (!clients.isEmpty()) {

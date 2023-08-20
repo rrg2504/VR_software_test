@@ -26,6 +26,8 @@ public class Client {
 
     private static final String HALT_GAME_COMMAND = "HALT_GAME";
 
+    private static final String SERVER_SHUTDOWN = "SERVER_SHUTDOWN";
+
     private static ClientGUI clientGUI;
 
     public Client(Socket socket, JTextArea logTextArea){
@@ -59,7 +61,7 @@ public class Client {
                         }
 
                     } catch (IOException e) {
-                        //close everything
+                        closeEverything(socket,bufferedReader,bufferedWriter);
                     }
                 }
             }
@@ -78,8 +80,8 @@ public class Client {
                 sendMessage(GAME_ALREADY_STARTED_RESPONSE);
             }
 
-        }
 
+        }
         if (command.equals(HALT_GAME_COMMAND)) {
             if(gameStarted){
                 clientGUI.updateLog("Received command to halt the game.");
@@ -91,14 +93,15 @@ public class Client {
                 sendMessage(NO_GAME_IS_PLAYING);
             }
         }
+
+        if (command.equals(SERVER_SHUTDOWN)) {
+            clientGUI.updateLog("Server is shutting down. Goodbye!");
+            closeEverything(socket, bufferedReader, bufferedWriter);
+            System.exit(0);
+        }
     }
 
-    private void appendToLog(String message) {
-        SwingUtilities.invokeLater(() -> {
-            logTextArea.append(message + "\n");
-            logTextArea.setCaretPosition(logTextArea.getDocument().getLength());
-        });
-    }
+
 
     public void sendMessage(String message) {
         try {
