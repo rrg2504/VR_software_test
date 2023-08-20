@@ -15,6 +15,7 @@ public class Client {
     private static final String START_GAME_COMMAND = "START_GAME";
     private static final String GAME_STARTED_RESPONSE = "INITIATED";
 
+
     public Client(Socket socket, JTextArea logTextArea){
         this.socket = socket;
         this.logTextArea = logTextArea;
@@ -23,29 +24,29 @@ public class Client {
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         } catch (IOException e) {
-            closeResources(socket, bufferedReader, bufferedWriter);
-            appendToLog("Failed to connect to the server.");
+            closeResources(socket,bufferedReader,bufferedWriter);
         }
     }
 
     public void listenForMessage(){
-        new Thread(() -> {
-            String serverMessage;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String serverMessage;
 
-            while(socket.isConnected()){
-                try{
-                    serverMessage = bufferedReader.readLine();
-                    System.out.println(serverMessage);
+                while(socket.isConnected()){
+                    try{
+                        serverMessage = bufferedReader.readLine();
+                        System.out.println(serverMessage);
 
-                    // Check if the message is a command/event
-                    if (serverMessage.startsWith(COMMAND_STARTS_WITH)) {
-                        String command = serverMessage.substring(COMMAND_STARTS_WITH.length());
-                        handleCommand(command); // Implement this method to handle the command
+                        // Check if the message is a command/event
+                        if (serverMessage.startsWith(COMMAND_STARTS_WITH)) {
+                            String command = serverMessage.substring(COMMAND_STARTS_WITH.length());
+                            handleCommand(command); // Implement this method to handle the command
+                        }
+                    } catch (IOException e) {
+                        //close everything
                     }
-                } catch (IOException e) {
-                    // Close connection and update log on failure
-                    closeResources(socket, bufferedReader, bufferedWriter);
-                    appendToLog("Connection to the server was lost.");
                 }
             }
         }).start();
@@ -113,7 +114,6 @@ public class Client {
         JTextArea logTextArea = new JTextArea(20, 50); // Create a larger log text area
         logTextArea.setEditable(false); // Make the text area read-only
         Client client = new Client(socket, logTextArea);
-        client.appendToLog("Connecting to the server...");
         client.listenForMessage();
 
         // Create a JFrame to display the logTextArea
