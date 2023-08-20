@@ -47,7 +47,7 @@ public class Host {
 
         // TODO the allowed ip's from config file
         Thread acceptThread = new Thread(() -> {
-            while (connectedClients.get() < 2) {
+            while (!serverSocket.isClosed()) {
                 try {
                     Socket clientSocket = serverSocket.accept();
                     String clientIP = clientSocket.getInetAddress().getHostAddress();
@@ -61,7 +61,7 @@ public class Host {
                             clients.add(clientHandler);
                         }
                         clientHandler.start();
-                        connectedClients.incrementAndGet();
+                        connectedClients.incrementAndGet(); //TODO
                     } else {
                         System.out.println("Rejected connection from client IP: " + clientIP);
                         // Optionally, you can close the socket for rejected connections
@@ -73,21 +73,21 @@ public class Host {
             }
         });
         acceptThread.start();
-        boolean statementPrinted = false;
-        while(true){
-            if(!statementPrinted && connectedClients.get() > 1) {
-                System.out.println("end of loop");
-                System.out.println(clients);
-                updateClients("Welcome, gamers! The game is starting!");
-                statementPrinted = true;
-            }
-
-            try {
-                Thread.sleep(1000); // Add a delay to avoid busy waiting
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+//        boolean statementPrinted = false;
+//        while(true){
+//            if(!statementPrinted && connectedClients.get() > 1) {
+//                System.out.println("end of loop");
+//                System.out.println(clients);
+//                updateClients("Welcome, gamers! The game is starting!");
+//                statementPrinted = true;
+//            }
+//
+//            try {
+//                Thread.sleep(1000); // Add a delay to avoid busy waiting
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
 
 
     }

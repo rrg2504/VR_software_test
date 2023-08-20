@@ -110,7 +110,8 @@ public class Client {
         int serverPort = Integer.parseInt(config.getProperty(SERVER_PORT));
 
         Socket socket = new Socket(serverIP, serverPort);
-        JTextArea logTextArea = new JTextArea(); // Create the log text area here
+        JTextArea logTextArea = new JTextArea(20, 50); // Create a larger log text area
+        logTextArea.setEditable(false); // Make the text area read-only
         Client client = new Client(socket, logTextArea);
         client.listenForMessage();
 
@@ -120,5 +121,6 @@ public class Client {
         frame.getContentPane().add(new JScrollPane(logTextArea));
         frame.pack();
         frame.setVisible(true);
+        frame.setSize(800, 600); // Set the size of the JFrame
     }
 }
