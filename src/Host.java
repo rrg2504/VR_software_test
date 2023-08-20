@@ -16,12 +16,17 @@ public class Host {
     private static ServerGUI serverGUI;
 
     private static final String GAME_STARTED_RESPONSE = "INITIATED";
+
+    private static final String GAME_ALREADY_STARTED_RESPONSE = "ALREADY_STARTED";
+
+    private static final String GAME_HALTED_RESPONSE = "HALTED";
+
+    private static final String NO_GAME_IS_PLAYING ="NO_GAME_PLAYING";
     private static final String FILE_NAME = "config/host_config.properties";
 
     public static void updateClients(String message) {
         for (ClientHandler client : clients) {
             client.sendMessage(message);
-
         }
     }
     public static void main(String[] args){
@@ -105,11 +110,11 @@ public class Host {
     }
 
     public static class ClientHandler extends Thread {
-        private Socket clientSocket;
+        private final Socket clientSocket;
         private BufferedReader reader;
         private PrintWriter writer;
 
-        private String clientIP;
+        private final String clientIP;
 
         public ClientHandler(Socket socket, String clientIP) {
             this.clientSocket = socket;
@@ -129,7 +134,6 @@ public class Host {
             try {
                 String clientMessage;
                 while ((clientMessage = reader.readLine()) != null) {
-                    // Process client messages
 
                     // Check if the message is a command/event
                     if (clientMessage.equals(GAME_STARTED_RESPONSE)) {
@@ -137,12 +141,34 @@ public class Host {
                             serverGUI.updateLog("Received Game Confirmation from client with ip=" + this.clientIP);
                         }
                     }
+
+                    if(clientMessage.equals(GAME_ALREADY_STARTED_RESPONSE)) {
+                        if (!clients.isEmpty()) {
+                            serverGUI.updateLog("Client ip=" + this.clientIP + " has already started its game");
+                        }
+                    }
+
+                    if (clientMessage.equals(GAME_HALTED_RESPONSE)) {
+                        if (!clients.isEmpty()) {
+                            serverGUI.updateLog("Client ip=" + this.clientIP + " has succesfully ended its game");
+                        }
+                    }
+
+                    if(clientMessage.equals(NO_GAME_IS_PLAYING)) {
+                        if (!clients.isEmpty()) {
+                            serverGUI.updateLog("Client ip=" + this.clientIP + " Cant halt game since no game is being played");
+                        }
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
                 // Close resources if needed
+                serverGUI.updateLog("Client ip=" + this.clientIP + " has disconnected");
                 closeResources();
+                synchronized (clientsLock) {
+                    clients.add(this);
+                }
             }
         }
 
@@ -172,25 +198,36 @@ public class Host {
 
 }
 
+/**
+ * Created a GUI for the host that allows sending commands to start
+ * or halt the game. It also logs any actions that happen
+ */
 class ServerGUI extends JFrame {
-    private final JButton sendMessageButton;
+
+    private final String HALT_GAME_COMMAND = "COMMAND:HALT_GAME";
+
+    private final String START_GAME_COMMAND = "COMMAND:START_GAME";
     private final JTextArea textArea;
     private List<Host.ClientHandler> clients;
 
     public ServerGUI(List<Host.ClientHandler> clients) {
-        // Initialize frame properties
+        this.clients = clients;
         setTitle("Server GUI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 300);
 
         // Create components
         JPanel panel = new JPanel();
-        sendMessageButton = new JButton("Send Message to Clients");
+        // button for sending message
+        JButton sendStartGameMessage = new JButton("Send Start Game Command");
+        JButton sendHaltGameMessage = new JButton("Send Halt Game Command");
+
         textArea = new JTextArea(10, 30);
         textArea.setEditable(false);
 
         // Add components to panel
-        panel.add(sendMessageButton);
+        panel.add(sendStartGameMessage);
+        panel.add(sendHaltGameMessage);
         panel.add(new JScrollPane(textArea));
 
         getContentPane().add(panel);
@@ -198,16 +235,24 @@ class ServerGUI extends JFrame {
         // Make the GUI visible
         setVisible(true);
 
-        // Add ActionListener to the button
-        sendMessageButton.addActionListener(e -> {
-            String command = "COMMAND:START_GAME";
-            Host.updateClients(command);
+        sendStartGameMessage.addActionListener(e -> {
+            Host.updateClients(START_GAME_COMMAND);
             if(!clients.isEmpty()){
                 updateLog("Sent command to start the game to all clients.");
             }else{
                 updateLog("There are no clients currently connected");
             }
         });
+
+        sendHaltGameMessage.addActionListener(e -> {
+            Host.updateClients(HALT_GAME_COMMAND);
+            if(!clients.isEmpty()){
+                updateLog("Sent command to start the game to all clients.");
+            }else{
+                updateLog("There are no clients currently connected");
+            }
+        });
+
     }
 
     public void updateLog(String message) {

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Properties;
 
 public class Client {
+    // Only for the purpose of simulating the game starting
+    private boolean gameStarted = false;
     private Socket socket;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
@@ -15,6 +17,14 @@ public class Client {
     private static final String COMMAND_STARTS_WITH = "COMMAND:";
     private static final String START_GAME_COMMAND = "START_GAME";
     private static final String GAME_STARTED_RESPONSE = "INITIATED";
+
+    private static final String GAME_HALTED_RESPONSE = "HALTED";
+
+    private static final String NO_GAME_IS_PLAYING ="NO_GAME_PLAYING";
+
+    private static final String GAME_ALREADY_STARTED_RESPONSE = "ALREADY_STARTED";
+
+    private static final String HALT_GAME_COMMAND = "HALT_GAME";
 
     private static ClientGUI clientGUI;
 
@@ -47,6 +57,7 @@ public class Client {
                             String command = serverMessage.substring(COMMAND_STARTS_WITH.length());
                             handleCommand(command); // Implement this method to handle the command
                         }
+
                     } catch (IOException e) {
                         //close everything
                     }
@@ -56,14 +67,30 @@ public class Client {
     }
 
     private void handleCommand(String command) {
-        // Implement this method to perform actions based on the received command
         if (command.equals(START_GAME_COMMAND)) {
-            // Start the game or perform relevant action
-            clientGUI.updateLog("Received command to start the game.");
-            sendMessage(GAME_STARTED_RESPONSE);
-            clientGUI.updateLog("Successfully started the game. Responded back to server with initiated");
+            if(!gameStarted){
+                clientGUI.updateLog("Received command to start the game.");
+                gameStarted = true;
+                clientGUI.updateLog("Successfully started the game");
+                sendMessage(GAME_STARTED_RESPONSE);
+            }else{
+                clientGUI.updateLog("Received command to start the game but we already are playing");
+                sendMessage(GAME_ALREADY_STARTED_RESPONSE);
+            }
+
         }
-        // Add more cases for different commands as needed
+
+        if (command.equals(HALT_GAME_COMMAND)) {
+            if(gameStarted){
+                clientGUI.updateLog("Received command to halt the game.");
+                gameStarted = false;
+                clientGUI.updateLog("Successfully ended the game.");
+                sendMessage(GAME_HALTED_RESPONSE);
+            }else{
+                clientGUI.updateLog("Received command to end the game but there is no game currently playing");
+                sendMessage(NO_GAME_IS_PLAYING);
+            }
+        }
     }
 
     private void appendToLog(String message) {
