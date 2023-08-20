@@ -3,6 +3,7 @@ import java.io.*;
 import java.net.Socket;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 public class Client {
     // Only for the purpose of simulating the game starting
@@ -97,6 +98,11 @@ public class Client {
         if (command.equals(SERVER_SHUTDOWN)) {
             clientGUI.updateLog("Server is shutting down. Goodbye!");
             closeEverything(socket, bufferedReader, bufferedWriter);
+            try {
+                TimeUnit.SECONDS.sleep(4);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             System.exit(0);
         }
     }
