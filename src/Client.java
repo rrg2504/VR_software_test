@@ -1,17 +1,19 @@
 import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Client class that will attempt connecting to host and receive
+ * commands to start or halt a game
+ */
 public class Client {
     // Only for the purpose of simulating the game starting
     private boolean gameStarted = false;
-    private Socket socket;
+    private final Socket socket;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
-    private JTextArea logTextArea; // Reference to the GUI log area
     private static final String SERVER_IP = "serverIP";
     private static final String SERVER_PORT = "serverPort";
     private static final String FILE_NAME = "config/client_config.properties";
@@ -31,44 +33,48 @@ public class Client {
 
     private static ClientGUI clientGUI;
 
-    public Client(Socket socket, JTextArea logTextArea){
+    public Client(Socket socket){
         this.socket = socket;
-        this.logTextArea = logTextArea;
 
         try{
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         } catch (IOException e) {
-            closeEverything(socket,bufferedReader,bufferedWriter);
+            closeResources(socket,bufferedReader,bufferedWriter);
         }
     }
 
+    /**
+     * client thread that will listen for any server messages.
+     * In this case it will only listen for commands
+     */
     public void listenForMessage(){
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String serverMessage;
+        new Thread(() -> {
+            String serverMessage;
 
-                while(socket.isConnected()){
-                    try{
-                        serverMessage = bufferedReader.readLine();
-                        System.out.println(serverMessage);
+            while(socket.isConnected()){
+                try{
+                    serverMessage = bufferedReader.readLine();
+                    System.out.println(serverMessage);
 
-                        // Check if the message is a command/event
-                        if (serverMessage.startsWith(COMMAND_STARTS_WITH)) {
-                            String command = serverMessage.substring(COMMAND_STARTS_WITH.length());
-                            handleCommand(command); // Implement this method to handle the command
-                        }
-
-                    } catch (IOException e) {
-                        closeEverything(socket,bufferedReader,bufferedWriter);
+                    // Check if the message is a command/event
+                    if (serverMessage.startsWith(COMMAND_STARTS_WITH)) {
+                        String command = serverMessage.substring(COMMAND_STARTS_WITH.length());
+                        handleCommand(command); // Implement this method to handle the command
                     }
+
+                } catch (IOException e) {
+                    closeResources(socket,bufferedReader,bufferedWriter);
                 }
             }
         }).start();
     }
 
+    /**
+     * will handle server messages that started with 'COMMAND:'
+     * @param command the command being sent
+     */
     private void handleCommand(String command) {
         if (command.equals(START_GAME_COMMAND)) {
             if(!gameStarted){
@@ -80,9 +86,8 @@ public class Client {
                 clientGUI.updateLog("Received command to start the game but we already are playing");
                 sendMessage(GAME_ALREADY_STARTED_RESPONSE);
             }
-
-
         }
+
         if (command.equals(HALT_GAME_COMMAND)) {
             if(gameStarted){
                 clientGUI.updateLog("Received command to halt the game.");
@@ -97,7 +102,7 @@ public class Client {
 
         if (command.equals(SERVER_SHUTDOWN)) {
             clientGUI.updateLog("Server is shutting down. Goodbye!");
-            closeEverything(socket, bufferedReader, bufferedWriter);
+            closeResources(socket, bufferedReader, bufferedWriter);
             try {
                 TimeUnit.SECONDS.sleep(4);
             } catch (InterruptedException e) {
@@ -119,7 +124,7 @@ public class Client {
         }
     }
 
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter){
+    public void closeResources(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter){
         try{
             if (bufferedReader != null){
                 bufferedReader.close();
@@ -135,8 +140,7 @@ public class Client {
         }
     }
 
-    public static void main(String[] args) throws IOException {
-        // Load configuration
+    public static void main(String[] args) {
         Properties config = new Properties();
         try (FileInputStream inputStream = new FileInputStream(FILE_NAME)) {
             config.load(inputStream);
@@ -145,7 +149,6 @@ public class Client {
             return;
         }
 
-        // Read configuration values
         String serverIP = config.getProperty(SERVER_IP);
         int serverPort = Integer.parseInt(config.getProperty(SERVER_PORT));
         clientGUI = new ClientGUI();
@@ -153,18 +156,18 @@ public class Client {
         try {
             Socket socket = new Socket(serverIP, serverPort);
             clientGUI.updateLog("Successfully Connected to server!");
-            JTextArea logTextArea = new JTextArea(20, 50);
-            logTextArea.setEditable(false);
-            Client client = new Client(socket, logTextArea);
+            Client client = new Client(socket);
             client.listenForMessage();
         } catch (IOException e) {
-            // Handle connection failure
             clientGUI.updateLog("Failed to connect to the server.");
         }
 
     }
 }
 
+/**
+ * Created a GUI for the Client
+ */
 class ClientGUI extends JFrame {
     private final JTextArea textArea;
 
@@ -189,6 +192,10 @@ class ClientGUI extends JFrame {
 
     }
 
+    /**
+     * Displays a message to the log in the Client gui
+     * @param message the message being displayed
+     */
     public void updateLog(String message) {
         textArea.append(message + "\n");
     }
